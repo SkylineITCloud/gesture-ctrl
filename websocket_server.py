@@ -57,17 +57,12 @@ async def handler(websocket):
     finally:
         print("❌ Client disconnected")
 
-print("""
-╔═══════════════════════════════════════════════╗
-║     GESTURE CTRL - WEBSOCKET SERVER            ║
-╠═══════════════════════════════════════════════╣
-║  ✅ Running on:  ws://localhost:8765          ║
-║                                               ║
-║  Now open index.html and click START TRACKING ║
-╚═══════════════════════════════════════════════╝
-""")
+print("GESTURE CTRL - WEBSOCKET SERVER")
+print("Running on:  ws://localhost:8765")
+print("Now open index.html and click START TRACKING")
 
-start_server = websockets.serve(handler, "localhost", 8765)
+async def main():
+    async with websockets.serve(handler, "localhost", 8765):
+        await asyncio.Future()
 
-asyncio.get_event_loop().run_until_complete(start_server)
-asyncio.get_event_loop().run_forever()
+asyncio.run(main())
