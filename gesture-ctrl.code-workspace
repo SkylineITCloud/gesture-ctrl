@@ -1,0 +1,21 @@
+{
+  "folders": [
+    { "path": "." }
+  ],
+  "settings": {
+    "liveServer.settings.port": 5500,
+    "liveServer.settings.NoBrowser": false,
+    "liveServer.settings.CustomBrowser": "chrome",
+    "editor.wordWrap": "on",
+    "files.associations": {
+      "*.html": "html"
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "ritwickdey.liveserver",
+      "esbenp.prettier-vscode",
+      "ms-vscode.live-share"
+    ]
+  }
+}
