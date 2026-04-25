@@ -782,6 +782,16 @@
   // ─── System Control Connection ─────────────────────────────────────────
   let lastGestureTime = 0;
   const GESTURE_COOLDOWN = 800;
+  
+  const socket = new WebSocket("ws://localhost:8765");
+
+  socket.onopen = () => {
+    console.log("Connected to server");
+  };
+
+  socket.onmessage = (event) => {
+    console.log("Response:", event.data);
+  };
 
   function sendGesture(gesture, data = {}) {
     const now = Date.now();
@@ -793,13 +803,9 @@
       lastGestureTime = now;
     }
     
-    fetch("http://localhost:5000/gesture", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ gesture, ...data })
-    }).catch(err => {
-      // Silent fail - normal if server isn't running
-    });
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ gesture, ...data }));
+    }
   }
 
   // ─── Actions ─────────────────────────────────────────────────────────
