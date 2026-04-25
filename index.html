@@ -780,37 +780,23 @@
   }
 
   // ─── System Control Connection ─────────────────────────────────────────
-  let ws = null;
-  let wsConnected = false;
+  let lastGestureTime = 0;
+  const GESTURE_COOLDOWN = 800;
 
-  function connectBackend() {
-    try {
-      ws = new WebSocket('ws://localhost:8765');
-      
-      ws.onopen = () => {
-        wsConnected = true;
-        addLog('✅ System control connected', 'system');
-        document.getElementById('trackStatus').className = 'status-dot active';
-      };
-      
-      ws.onclose = () => {
-        wsConnected = false;
-        addLog('❌ System control disconnected', 'system');
-        setTimeout(connectBackend, 3000);
-      };
-      
-      ws.onerror = () => {
-        wsConnected = false;
-      };
-    } catch (e) {
-      setTimeout(connectBackend, 3000);
-    }
-  }
-
-  function sendCommand(action, data = {}) {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ action, ...data }));
-    }
+  function sendGesture(gesture) {
+    const now = Date.now();
+    
+    // Cooldown protection
+    if (now - lastGestureTime < GESTURE_COOLDOWN) return;
+    lastGestureTime = now;
+    
+    fetch("http://localhost:5000/gesture", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gesture: gesture })
+    }).catch(err => {
+      // Silent fail - normal if server isn't running
+    });
   }
 
   // ─── Actions ─────────────────────────────────────────────────────────
@@ -825,7 +811,7 @@
       smoothX = smoothX * 0.7 + targetX * 0.3;
       smoothY = smoothY * 0.7 + targetY * 0.3;
 
-      sendCommand('mouse_move', { x: smoothX, y: smoothY });
+      sendGesture('mouse_move');
 
       // Show cursor indicator on canvas
       const ciX = indexTip.x * canvas.width;
@@ -844,14 +830,14 @@
     if (now - lastActionTime < cooldown) return;
 
     const actions = {
-      pinch: () => { if (settings.mouse) { sendCommand('left_click'); addLog('Left click', 'pinch'); actionCount++; document.getElementById('modeIndicator').textContent = '◈ L-CLICK'; } },
-      pinch_middle: () => { if (settings.mouse) { sendCommand('right_click'); addLog('Right click', 'pinch_middle'); actionCount++; document.getElementById('modeIndicator').textContent = '◉ R-CLICK'; } },
-      fist: () => { if (settings.media) { sendCommand('play_pause'); addLog('Play/Pause', 'fist'); actionCount++; document.getElementById('modeIndicator').textContent = '⏯ MEDIA'; } },
-      thumb_up: () => { if (settings.media) { sendCommand('volume_up'); addLog('Volume UP', 'thumb_up'); actionCount++; document.getElementById('modeIndicator').textContent = '🔊 VOL+'; } },
-      thumb_down: () => { if (settings.media) { sendCommand('volume_down'); addLog('Volume DOWN', 'thumb_down'); actionCount++; document.getElementById('modeIndicator').textContent = '🔉 VOL-'; } },
-      victory: () => { if (settings.media) { sendCommand('next_track'); addLog('Next Track', 'victory'); actionCount++; document.getElementById('modeIndicator').textContent = '⏭ NEXT'; } },
-      point_up: () => { if (settings.scroll) { sendCommand('scroll_up'); addLog('Scroll UP', 'point_up'); actionCount++; document.getElementById('modeIndicator').textContent = '↑ SCROLL'; } },
-      point_down: () => { if (settings.scroll) { sendCommand('scroll_down'); addLog('Scroll DOWN', 'point_down'); actionCount++; document.getElementById('modeIndicator').textContent = '↓ SCROLL'; } },
+      pinch: () => { if (settings.mouse) { sendGesture('left_click'); addLog('Left click', 'pinch'); actionCount++; document.getElementById('modeIndicator').textContent = '◈ L-CLICK'; } },
+      pinch_middle: () => { if (settings.mouse) { sendGesture('right_click'); addLog('Right click', 'pinch_middle'); actionCount++; document.getElementById('modeIndicator').textContent = '◉ R-CLICK'; } },
+      fist: () => { if (settings.media) { sendGesture('play_pause'); addLog('Play/Pause', 'fist'); actionCount++; document.getElementById('modeIndicator').textContent = '⏯ MEDIA'; } },
+      thumb_up: () => { if (settings.media) { sendGesture('volume_up'); addLog('Volume UP', 'thumb_up'); actionCount++; document.getElementById('modeIndicator').textContent = '🔊 VOL+'; } },
+      thumb_down: () => { if (settings.media) { sendGesture('volume_down'); addLog('Volume DOWN', 'thumb_down'); actionCount++; document.getElementById('modeIndicator').textContent = '🔉 VOL-'; } },
+      victory: () => { if (settings.media) { sendGesture('next_track'); addLog('Next Track', 'victory'); actionCount++; document.getElementById('modeIndicator').textContent = '⏭ NEXT'; } },
+      point_up: () => { if (settings.scroll) { sendGesture('scroll_up'); addLog('Scroll UP', 'point_up'); actionCount++; document.getElementById('modeIndicator').textContent = '↑ SCROLL'; } },
+      point_down: () => { if (settings.scroll) { sendGesture('scroll_down'); addLog('Scroll DOWN', 'point_down'); actionCount++; document.getElementById('modeIndicator').textContent = '↓ SCROLL'; } },
     };
 
     if (actions[gesture] && gesture !== lastGesture) {
@@ -1056,8 +1042,6 @@
     }
   }
 
-  // Connect to system control backend on load
-  connectBackend();
 </script>
 
 </body>
