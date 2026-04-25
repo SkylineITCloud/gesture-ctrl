@@ -783,17 +783,20 @@
   let lastGestureTime = 0;
   const GESTURE_COOLDOWN = 800;
 
-  function sendGesture(gesture) {
+  function sendGesture(gesture, data = {}) {
     const now = Date.now();
     
-    // Cooldown protection
-    if (now - lastGestureTime < GESTURE_COOLDOWN) return;
-    lastGestureTime = now;
+    // Mouse movement has no cooldown
+    if (gesture !== 'mouse_move' && now - lastGestureTime < GESTURE_COOLDOWN) return;
+    
+    if (gesture !== 'mouse_move') {
+      lastGestureTime = now;
+    }
     
     fetch("http://localhost:5000/gesture", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ gesture: gesture })
+      body: JSON.stringify({ gesture, ...data })
     }).catch(err => {
       // Silent fail - normal if server isn't running
     });
@@ -811,7 +814,7 @@
       smoothX = smoothX * 0.7 + targetX * 0.3;
       smoothY = smoothY * 0.7 + targetY * 0.3;
 
-      sendGesture('mouse_move');
+      sendGesture('mouse_move', { x: smoothX, y: smoothY });
 
       // Show cursor indicator on canvas
       const ciX = indexTip.x * canvas.width;
