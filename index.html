@@ -779,6 +779,40 @@
     return 'unknown';
   }
 
+  // ─── System Control Connection ─────────────────────────────────────────
+  let ws = null;
+  let wsConnected = false;
+
+  function connectBackend() {
+    try {
+      ws = new WebSocket('ws://localhost:8765');
+      
+      ws.onopen = () => {
+        wsConnected = true;
+        addLog('✅ System control connected', 'system');
+        document.getElementById('trackStatus').className = 'status-dot active';
+      };
+      
+      ws.onclose = () => {
+        wsConnected = false;
+        addLog('❌ System control disconnected', 'system');
+        setTimeout(connectBackend, 3000);
+      };
+      
+      ws.onerror = () => {
+        wsConnected = false;
+      };
+    } catch (e) {
+      setTimeout(connectBackend, 3000);
+    }
+  }
+
+  function sendCommand(action, data = {}) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ action, ...data }));
+    }
+  }
+
   // ─── Actions ─────────────────────────────────────────────────────────
   function executeGestureAction(gesture, landmarks) {
     const now = Date.now();
@@ -790,6 +824,8 @@
       const targetY = indexTip.y * window.screen.height;
       smoothX = smoothX * 0.7 + targetX * 0.3;
       smoothY = smoothY * 0.7 + targetY * 0.3;
+
+      sendCommand('mouse_move', { x: smoothX, y: smoothY });
 
       // Show cursor indicator on canvas
       const ciX = indexTip.x * canvas.width;
@@ -808,14 +844,14 @@
     if (now - lastActionTime < cooldown) return;
 
     const actions = {
-      pinch: () => { if (settings.mouse) { addLog('Left click', 'pinch'); actionCount++; document.getElementById('modeIndicator').textContent = '◈ L-CLICK'; } },
-      pinch_middle: () => { if (settings.mouse) { addLog('Right click', 'pinch_middle'); actionCount++; document.getElementById('modeIndicator').textContent = '◉ R-CLICK'; } },
-      fist: () => { if (settings.media) { addLog('Play/Pause', 'fist'); actionCount++; document.getElementById('modeIndicator').textContent = '⏯ MEDIA'; } },
-      thumb_up: () => { if (settings.media) { addLog('Volume UP', 'thumb_up'); actionCount++; document.getElementById('modeIndicator').textContent = '🔊 VOL+'; } },
-      thumb_down: () => { if (settings.media) { addLog('Volume DOWN', 'thumb_down'); actionCount++; document.getElementById('modeIndicator').textContent = '🔉 VOL-'; } },
-      victory: () => { if (settings.media) { addLog('Next Track', 'victory'); actionCount++; document.getElementById('modeIndicator').textContent = '⏭ NEXT'; } },
-      point_up: () => { if (settings.scroll) { addLog('Scroll UP', 'point_up'); actionCount++; document.getElementById('modeIndicator').textContent = '↑ SCROLL'; } },
-      point_down: () => { if (settings.scroll) { addLog('Scroll DOWN', 'point_down'); actionCount++; document.getElementById('modeIndicator').textContent = '↓ SCROLL'; } },
+      pinch: () => { if (settings.mouse) { sendCommand('left_click'); addLog('Left click', 'pinch'); actionCount++; document.getElementById('modeIndicator').textContent = '◈ L-CLICK'; } },
+      pinch_middle: () => { if (settings.mouse) { sendCommand('right_click'); addLog('Right click', 'pinch_middle'); actionCount++; document.getElementById('modeIndicator').textContent = '◉ R-CLICK'; } },
+      fist: () => { if (settings.media) { sendCommand('play_pause'); addLog('Play/Pause', 'fist'); actionCount++; document.getElementById('modeIndicator').textContent = '⏯ MEDIA'; } },
+      thumb_up: () => { if (settings.media) { sendCommand('volume_up'); addLog('Volume UP', 'thumb_up'); actionCount++; document.getElementById('modeIndicator').textContent = '🔊 VOL+'; } },
+      thumb_down: () => { if (settings.media) { sendCommand('volume_down'); addLog('Volume DOWN', 'thumb_down'); actionCount++; document.getElementById('modeIndicator').textContent = '🔉 VOL-'; } },
+      victory: () => { if (settings.media) { sendCommand('next_track'); addLog('Next Track', 'victory'); actionCount++; document.getElementById('modeIndicator').textContent = '⏭ NEXT'; } },
+      point_up: () => { if (settings.scroll) { sendCommand('scroll_up'); addLog('Scroll UP', 'point_up'); actionCount++; document.getElementById('modeIndicator').textContent = '↑ SCROLL'; } },
+      point_down: () => { if (settings.scroll) { sendCommand('scroll_down'); addLog('Scroll DOWN', 'point_down'); actionCount++; document.getElementById('modeIndicator').textContent = '↓ SCROLL'; } },
     };
 
     if (actions[gesture] && gesture !== lastGesture) {
@@ -1019,6 +1055,9 @@
       alert('Camera error: ' + err.message);
     }
   }
+
+  // Connect to system control backend on load
+  connectBackend();
 </script>
 
 </body>
