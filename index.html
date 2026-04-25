@@ -780,32 +780,14 @@
   }
 
   // ─── System Control Connection ─────────────────────────────────────────
-  let lastGestureTime = 0;
-  const GESTURE_COOLDOWN = 800;
-  
   const socket = new WebSocket("ws://localhost:8765");
 
   socket.onopen = () => {
-    console.log("Connected to server");
+    console.log("Connected to WebSocket server");
   };
 
-  socket.onmessage = (event) => {
-    console.log("Response:", event.data);
-  };
-
-  function sendGesture(gesture, data = {}) {
-    const now = Date.now();
-    
-    // Mouse movement has no cooldown
-    if (gesture !== 'mouse_move' && now - lastGestureTime < GESTURE_COOLDOWN) return;
-    
-    if (gesture !== 'mouse_move') {
-      lastGestureTime = now;
-    }
-    
-    if (socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({ gesture, ...data }));
-    }
+  function sendGesture(gesture) {
+    socket.send(JSON.stringify({ gesture: gesture }));
   }
 
   // ─── Actions ─────────────────────────────────────────────────────────
