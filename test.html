@@ -2,35 +2,38 @@
 <html>
 <head>
     <title>WebSocket Test</title>
+    <style>
+        body { font-family: monospace; padding: 30px; background: #0a0a0f; color: #e8e8f0; }
+        #output { white-space: pre-wrap; line-height: 1.8; }
+    </style>
 </head>
 <body>
-<h2>WebSocket Test</h2>
-<div id="output">Starting...</div>
+    <h2>WebSocket Test</h2>
+    <div id="output"></div>
 
-<script>
-const output = document.getElementById("output");
+    <script>
+        const output = document.getElementById("output");
 
-output.innerHTML += "<br>Script loaded";
+        output.innerHTML += "<br>Script loaded";
 
-const ws = new WebSocket("ws://localhost:8765");
+        const ws = new WebSocket("ws://localhost:8765");
 
-ws.onopen = () => {
-    output.innerHTML += "<br>✅ Connected";
-};
+        ws.onopen = () => {
+            output.innerHTML += "<br>✅ Connected";
+            ws.send("Hello server 👋");
+        };
 
-ws.onmessage = (event) => {
-    output.innerHTML += "<br>📩 " + event.data;
-};
+        ws.onmessage = (event) => {
+            output.innerHTML += "<br>📩 " + event.data;
+        };
 
-ws.onerror = (error) => {
-    output.innerHTML += "<br>❌ Error";
-    console.error(error);
-};
+        ws.onerror = () => {
+            output.innerHTML += "<br>❌ Error";
+        };
 
-ws.onclose = () => {
-    output.innerHTML += "<br>🔌 Closed";
-};
-</script>
-
+        ws.onclose = () => {
+            output.innerHTML += "<br>🔌 Closed";
+        };
+    </script>
 </body>
 </html>
